@@ -1,27 +1,30 @@
 from wave2D import *
+import mkl
+mkl.set_num_threads(4)
 
-M = np.array([1,1,0,0,0])
+PROJECT_NAME 		= 'erase'
+
+M = (1,1,0)
+F = (0,0)
 # Galerkin Object
 obj = WaveDrive2D(
-	mesh_path	 = '../resources/mesh/new-mesh2.msh', # Mesh file path
-	mesh_type	 = 'msh', # type of mesh [neu, msh]
-	src_path 	 = '../resources/source/gauss_rtp5.src', # Source path
-	source 		 = (2800.,1800.), # Source position (x,y)
-	sigma_smooth = 60., # Sigma spatial support
-	gather		 = [(1790.,0.01), (2506.,0.01)], # array of positions (tuples) to record information
-	source_order = 2, # maximun order
-	order	 	 = 1, # minimun order
-	freq		 = 7.5, # frequency
-	p_velocity	 = 4000., # p-wave velocity
-	s_velocity	 = 2310., # p-wave velocity
-	density		 = 2000.,
-	duration	 = 1.6, # simulation time
-	pml_layer	 = 300., # PML length from border
-	pml_coef 	 = 0.00001,
+	project 	 = PROJECT_NAME,
+	mesh_file	 = '../resources/mesh/tri/tlr.ele', # Mesh file path
+	param_file	 = '../resources/mesh/tri/tlr.param', # Mesh file path
+	src_position = (2146.76, 383.27),#(2144.,400.),# # Source position (x,y)
+	src_smooth 	 = 50., # Sigma spatial support
+	gather		 = [(3200.,0.01), (2500.,1100.), (3400.,500.)],#(3350.,0.01),(3600.,0.01)], # array of positions (tuples) to record information
+	source_order = 3, # maximun order
+	order	 	 = 2, # minimun order
+	src_freq	 = 7.5, # frequency
+	src_delay	 = 1/7.5, # frequency
+	duration	 = 0.5, # simulation time
+	pml_layer	 = (300., 300., 0., 300.), # PML length from border (xmin, xmax, ymin, ymax)
+	pml_coef 	 = 0.0015,
 	pixel_size	 = 10., # movie resolution
-	tpf	 		 = 0.01, # sampling time between frames
-	source_dt	 = 0.001, # Source file sampling
+	tpf	 	 	 = 0.01, # sampling time between frames
 	stress		 = M, # initial stress tensor: [Mxx, Myy, Mxy]
+	displacement = F, # Velocity excitation [Fx, Fy]
 )
 '''
 	relations

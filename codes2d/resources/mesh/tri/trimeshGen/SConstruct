@@ -1,0 +1,159 @@
+from rsf.proj import *
+import numpy as np
+from subprocess import call
+import json,sys,os
+
+from progress import ProgressCounter
+
+SU = os.environ.get('CWPROOT')
+CWP = os.path.join(SU, 'bin/')
+
+# Input
+jsonfile='twolayers.json'
+# Output
+vpfile='vp_model.bin'
+vppostscript='vp_model.ps'
+vsfile='vs_model.bin'
+vspostscript='vs_model.ps'
+rhofile='rho_model.bin'
+rhopostscript='rho_model.ps'
+geometry='geo_model.poly'
+
+# Iteration parameters
+mesh_iter=30
+min_angle=29
+
+freq=7.5
+
+maxangle = 10
+
+# Function to convert array to string
+def clean_format(string):
+	return str(string).replace('[','').replace(']','').replace(' ','')
+
+# Function that creates a poly file, the same geometry created in the binary file
+def create_poly(geometry, d, layers, points, segments):
+	genmesh = open(geometry, 'w')
+	genmesh.write('%d %d %d %d\n' % (points, 2, 0, 1))
+	i=1
+	for array in d["data"]:
+		for x, z in zip(array["x"],array["z"]):
+			genmesh.write('%d %g %g %d\n' % (i, x, z, 0))
+			i=i+1
+	genmesh.write('%d %d\n' % (segments, 1))
+	i=1
+	p=1
+	for array in d["data"]:
+		for x, z in zip(array["x"][:-1],array["z"][:-1]):
+			genmesh.write('%d %g %g %d\n' % (p, i, i+1, 0))
+			i=i+1
+			p=p+1
+		i=i+1
+	i=1
+	for array in d["data"][:-1]:
+		genmesh.write('%d %g %g %d\n' % (p, i, i + len(array["x"]), 0))
+		i = i + len(array["x"])
+		p = p + 1
+	i=len(d["data"][0]["x"])
+	for array in d["data"][1:]:
+		genmesh.write('%d %g %g %d\n' % (p, i, i + len(array["x"]), 0))
+		i = i + len(array["x"])
+		p = p + 1
+	genmesh.write('0')
+	genmesh.close()
+
+# Open json file that contain the geometry of the layered model
+with open(jsonfile) as json_data:
+    d = json.load(json_data)
+
+# Parameters calculated based on the information stored in the json file
+points=0
+layers=0
+segments=0
+for array in d["data"]:
+	segments = segments+len(array["x"])-1
+	for x in array["x"]:
+		points=points+1
+	layers=layers+1
+
+layers=layers-1
+segments=segments+2*layers
+
+print "=========== Creating model ==========="
+print "%d layers model" % layers
+print "%d initial nodes" % points
+print "%d segments" % segments
+print "======================================"
+
+# Calculate parameters to generate all the files files
+param1 = 'maxangle=%g xmin=%g xmax=%g zmin=%g zmax=%g ' % (maxangle, 0, d["xmax"], 0, d["zmax"])
+
+for i in range(0,(layers+1)):
+	xedge=clean_format(d["data"][i]["x"])
+	zedge=clean_format(d["data"][i]["z"])
+	sedge=clean_format(np.zeros(len(d["data"][i]["z"]),dtype='int8').tolist())
+	param1 = param1 + '%d xedge=%s zedge=%s sedge=%s ' % (i+1, xedge, zedge, sedge)
+
+param1 = param1 + 'kedge=%s ' % (clean_format(range(1,(layers+2))))
+
+for i in range(layers):
+	sfill=clean_format([d["data"][i]["x"][0]+0.1,d["data"][i]["z"][0]+0.1,0,0,d["velocity"][i],0,0])
+	param1 = param1 + 'sfill=%s ' % (sfill)
+
+param2a = 'n1=%d n2=%d' % (d["nz"], d["nx"])
+param2 = 'n1=%d n2=%d d1=%g d2=%g' % (d["nz"], d["nx"], d["dz"], d["dx"])
+
+param3 = 'n1=%d n2=%d d1=%g d2=%g ' % (d["nz"], d["nx"], d["dz"], d["dx"])
+param3 = param3 + 'legend=1 units="Velocity (m/seg)" '
+param3 = param3 + 'label1="Depth (m)" label2="Distance (m)" '
+param3 = param3 + 'labelsize=12 titlesize=18 '
+param3 = param3 + 'd1num=0.0 d2num=0.0 lx=0.6 '
+param3 = param3 + 'wrgb=0.8,0.8,0.8 grgb=0.4,0.4,0.4 brgb=0,0,0 hbox=4 wbox=4 '
+
+# Flow that creates vel.out file, triangular model
+Flow('vel.out', None, '''%strimodel %s''' % (CWP, param1))
+# Flow that creates uniform model based on the triangular one
+Flow(vpfile, 'vel.out', '''%stri2uni %s''' % (CWP, param2a))
+# Flow that creates model ps file
+# Flow(vppostscript, vpfile, '''%spsimage %s''' % (CWP, param3))
+# Flow that creates model rsf file
+Flow('vp', vpfile, '''echo in=${SOURCE} %s data_format="native_float" esize=4 smooth rect2=5 repeat=5 | transp memsize=200 | smooth rect2=5 repeat=5 | transp memsize=200 ''' % param2)
+Flow("vs", "vp", '''sfmath output="input/1.73410404624"''')
+Flow("rho", "vp", '''sfmath output="310.0*input^0.25"''')
+Result('vp', '''grey color=j mean=y scalebar=y barreverse=y title="Layered velocity model (vp)" label1="Depth" unit1="m" label2="Distance" unit2="m"''')
+Result('vs', '''grey color=j mean=y scalebar=y barreverse=y title="Layered velocity model (vs)" label1="Depth" unit1="m" label2="Distance" unit2="m"''')
+Result('rho', '''grey color=j mean=y scalebar=y barreverse=y title="Layered velocity model (rho)" label1="Depth" unit1="m" label2="Distance" unit2="m"''')
+
+filename, ext = geometry.split('.')
+
+# Create poly file that contain the initial nodes in de model domain
+create_poly(geometry, d, layers, points, segments)
+
+# Generate triangular mesh based on the poly file
+Flow('%s.0.log' % filename, None, 'triangle -pDq%g %s' % (min_angle,geometry))
+
+screen = open('/dev/tty', 'w')
+
+# iterate to achive a refined mesh
+for i in range(1, mesh_iter+1):
+	param = '%s.%d' % (filename, i)
+	Flow('%s.area' % param, ['vp', 'vs', 'rho'], '''src/meshing vp=${SOURCES[0]} vs=${SOURCES[1]} rho=${SOURCES[2]} freq=%g iter=%d''' % (freq, i))
+	Flow('%s.log' % param, None, 'triangle -pDraq%g %s' % (min_angle,param))
+
+Progress(ProgressCounter(), interval=1)
+
+# Parameters scanner
+if len(sys.argv) > 1:
+	if sys.argv[1] == '-c':
+		print "cleaning .poly .ele .node .area .log .dat files..."
+		call('rm -rf %s.poly' % filename, shell=True)
+		call('rm -rf %s.*.ele' % filename, shell=True)
+		call('rm -rf %s.*.vel' % filename, shell=True)
+		call('rm -rf %s.*.node' % filename, shell=True)
+		call('rm -rf %s.*.area' % filename, shell=True)
+		call('rm -rf %s.*.poly' % filename, shell=True)
+		call('rm -rf %s.*.log' % filename, shell=True)
+		call('rm -rf %s.*.param' % filename, shell=True)
+		call('rm -rf *.dat', shell=True)
+
+End()

@@ -150,7 +150,7 @@ class Poly(object):
 				L1[i] = n/N
 				L3[i] = m/N
 				i=i+1
-	
+
 		L2 = 1.0 - L1 - L3
 		x = -L2+L3
 		y = (-L2-L3+2*L1)/np.sqrt(3)
@@ -194,15 +194,15 @@ M2 = la.inv(np.dot(V2,V2.T))
 print(M1)
 print(M2)
 
-# if i >= 0 and j >= 0 and i+j <= N:
-# 	obj = Poly(order=N,i=i,j=j)
-# 	fig = plt.figure()
-# 	ax = fig.gca(projection='3d')
-# 	ax.plot_trisurf(obj.r, obj.s, obj.z, color='#555555', linewidth=0, antialiased=False)
-# 	ax._axis3don = False
-# 	ax.set_aspect('equal')
-# 	ax.set_title(r"$\displaystyle m = ${}".format(obj.m))
-# 	ax.zaxis.set_major_locator(LinearLocator(10))
-# 	ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-# 	ax.view_init(20,-130)
-# 	plt.show()
+if i >= 0 and j >= 0 and i+j <= N:
+	obj = Poly(order=N,i=i,j=j)
+	fig = plt.figure()
+	ax = fig.gca(projection='3d')
+	ax.plot_trisurf(obj.r, obj.s, obj.z, color='#555555', linewidth=0, antialiased=False)
+	ax._axis3don = False
+	ax.set_aspect('equal')
+	ax.set_title(r"$\displaystyle m = ${}".format(obj.m))
+	ax.zaxis.set_major_locator(LinearLocator(10))
+	ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+	ax.view_init(20,-130)
+	plt.show()

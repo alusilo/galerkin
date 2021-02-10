@@ -7,83 +7,117 @@ import matplotlib.tri as tri
 
 import os, json
 
-def load_vertex(path):
-	if os.path.exists(path):
-		with open(path, 'rt') as f:
-			data = f.read().splitlines()
-			# line identification for nodes
-			nodeId = data.index('$Nodes')+1
-			# line identification for elements
-			elementId = data.index('$Elements')+1
-			# Number of vertex
-			Nv = int(data[nodeId])
-			# Nodes array
-			nodes 	 = np.array([list(map(float, a.split(' ')[1:3])) for a in data[nodeId+1:nodeId+Nv+1]])
-			VX = nodes[:,0]
-			VY = nodes[:,1]
-			
-		print("Mesh file {} loadded successfully.".format(path.split('/')[-1]))
+from Mesh2D import *
 
-		return VX, VY
-	else:
-		print("Error: Especified file '{}' does not exists.".format(path))
-		exit(1)
+fig, ax = plt.subplots(1, 1, sharex=False, sharey=False, figsize=(9,5))
 
-def load_vertex2(path):
-	if os.path.exists(path):
-		with open(path, 'rt') as f:
-			data = f.readlines()
-			Nv,K  = np.array(data[6].split()[:2]).astype(int)
-			VX,VY = np.array(list(map(lambda a: a.split()[1:], data[9:Nv+9])), dtype=float).T
+NDG_BINARY_FILE = 'movieVx.npy'
+PARAM_FILENAME  = 'model.param'
 
-		print("Mesh file {} loadded successfully.".format(path.split('/')[-1]))
+PROJECT_NAME 		= 'erase'
+DG_ROOT 			= os.path.dirname(os.getcwd())
+LOCAL_PROJECT_DIR 	= os.path.join('resources/output', PROJECT_NAME)
+PROJECT_DIR 		= os.path.join(DG_ROOT, LOCAL_PROJECT_DIR)
 
-		return VX, VY
-	else:
-		print("Error: Especified file '{}' does not exists.".format(path))
-		exit(1)
+PARAM_FILE_PATH = os.path.join(PROJECT_DIR, PARAM_FILENAME)
+MOVIE_FILE_PATH = os.path.join(PROJECT_DIR, NDG_BINARY_FILE)
 
-fig, ax = plt.subplots(1, 1, sharex=False, sharey=False)
-
-param = json.load(open('../resources/output/model.param'))
+param = json.load(open(PARAM_FILE_PATH))
 duration = param['duration']
 xmin,xmax,ymin,ymax = param['limits']
-source = param['source']
+source = param['source']['position']
 gather = param['gather']
+print(gather)
 mesh_file = param['mesh']
+pml_layer = param['pml_layer']
 
-data = np.load('../resources/output/movieUx.npy')
-VX, VY = load_vertex(mesh_file)
+pml_line1 = np.array([
+	[xmin + pml_layer[0], xmin + pml_layer[0]],
+	[ymin, ymax]
+])
+
+pml_line2 = np.array([
+	[xmin, xmax],
+	[ymax - pml_layer[3], ymax - pml_layer[3]]
+])
+
+pml_line3 = np.array([
+	[xmax - pml_layer[1], xmax - pml_layer[1]],
+	[ymax, ymin]
+])
+
+ax.plot(pml_line1[0]/1000, pml_line1[1]/1000, color='white', linewidth=0.5)
+ax.plot(pml_line2[0]/1000, pml_line2[1]/1000, color='white', linewidth=0.5)
+ax.plot(pml_line3[0]/1000, pml_line3[1], color='white', linewidth=0.5)
+
+obj = MeshReader(
+	mesh_file 	 = mesh_file,
+	src_position = source,
+	gather 		 = gather,
+	src_smooth 	 = 0,
+	plot = False
+)
+
+K, Nv, VX, VY, e2v = obj.get_values()
+
+data = np.load(MOVIE_FILE_PATH)
 
 frames = len(data)
 print("total frames: {}".format(frames))
 frame = data[0].T
 
-vmin,vmax = data.min()/15,data.max()/15
+vmin,vmax = data.min()/1.0,data.max()/1.0
 
 dt = duration/frames
 
-im = plt.imshow(frame, extent=[xmin,xmax,ymax,ymin], aspect='equal', cmap=plt.get_cmap('jet'), origin='upper', animated=True)
+ax.set_xlim(xmin/1000,xmax/1000)
+ax.set_ylim(ymax/1000,ymin/1000)
+#ax.set_xlim(source[0]/1000-0.35,source[0]/1000+0.35)
+#ax.set_ylim(source[1]/1000+0.35,source[1]/1000-0.35)
+im = plt.imshow(frame, extent=[xmin/1000,xmax/1000,ymax/1000,ymin/1000], aspect='equal', cmap=plt.get_cmap('gray'), origin='upper', animated=True)
 im.set_clim([vmax, vmin])
-title = ax.set_title("Wave propagation {}[s]".format(0.0))
+#title = ax.set_title("Wave propagation {}[s]".format(0.0))
+ax.set_xlabel(r'$x$ [$km$]')
+ax.set_ylabel(r'$z$ [$km$]')
 bar = plt.colorbar()
+
+bar.remove()
+plt.draw()
 
 for gth in gather:
  	gx,gy = gth
- 	ax.scatter(gx, gy, color='blue', marker='v', s=50)
+ 	ax.scatter(gx/1000, gy/1000, color='white', marker='v', edgecolors='black', s=100)
 
 sx,sy = source
-ax.scatter(sx, sy, color='red', marker='*', s=50)
+ax.scatter(sx/1000, sy/1000, color='yellow', marker='*', edgecolors='black', s=100)
 
-mesh = tri.Triangulation(VX,VY)
-plt.triplot(mesh, lw=0.1, color='black')
-def updatefig(*args):
-	global frame
-	i = args[0]
-	frame = data[i].T
+mesh = tri.Triangulation(VX/1000,VY/1000)
+#plt.triplot(mesh, lw=0.1, color='black')
+
+pause = False
+def simData():
+	global pause
+	frame = data[0].T
+	i = 0
+	while i < frames:
+		if not pause:
+			frame = data[i].T
+			#if i == 25:
+			#	pause = True
+			i = i+1
+		yield frame, i
+
+def onClick(event):
+	global pause
+	pause ^= True
+
+def updatefig(simData):
+	frame, i = simData
 	im.set_array(frame)
-	ax.set_title('Wave propagation (t={0:.3f}[s])'.format((i+1)*dt))
+	#ax.set_title('Wave propagation (t={0:.3f}[s])'.format((i)*dt))
 	return im,
 
-ani = animation.FuncAnimation(fig, updatefig, frames=frames, interval=50, repeat_delay=400, blit=False, repeat=True)
+fig.canvas.mpl_connect('button_press_event', onClick)
+ani = animation.FuncAnimation(fig, updatefig, simData, interval=50, repeat_delay=400, blit=False, repeat=True)
+#ani.save('animation1.mp4')
 plt.show()

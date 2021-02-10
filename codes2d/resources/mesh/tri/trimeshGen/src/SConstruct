@@ -1,0 +1,11 @@
+# http://www.scons.org/doc/production/HTML/scons-man.html
+import os
+
+sources_files = Glob('*.cc')
+
+RSFROOT=os.environ['RSFROOT']
+env = Environment(LIBS=['rsf++','rsf','m',],
+                  CFLAGS=['-Wall','-g', '-c','-fopenmp'],
+                  LIBPATH=['/usr/lib',RSFROOT+'/lib'],
+                  CPPPATH=['/usr/include', RSFROOT+'/include', '../include'])
+env.Program('meshing', sources_files)
