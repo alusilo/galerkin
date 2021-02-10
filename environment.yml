@@ -1,0 +1,6 @@
+name: galerkin
+dependencies:
+  - python=3.5
+  - numpy
+  - scipy
+  - matplotlib
