@@ -1,0 +1,9 @@
+*.ps
+*.poly
+*.out
+*.bin
+*~
+*.pyc
+*.npy
+__*
+__pycache__/
