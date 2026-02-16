@@ -1,4 +1,4 @@
-from Mesh2D import *
+from .Mesh2D import *
 
 #import mkl
 

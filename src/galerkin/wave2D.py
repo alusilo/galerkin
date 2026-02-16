@@ -1,4 +1,4 @@
-from nodalDG import *
+from .nodalDG import *
 import sys
 import json
 
@@ -26,8 +26,9 @@ class WaveDrive2D(NodalDG2D):
 		self.src_delay = kwargs['src_delay']
 
 		PROJECT_NAME 		= kwargs['project']
-		DG_ROOT 			= os.path.dirname(os.getcwd())
-		LOCAL_PROJECT_DIR 	= os.path.join('resources/output', PROJECT_NAME)
+		# Get project root (two levels up from src/galerkin/)
+		DG_ROOT 			= os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+		LOCAL_PROJECT_DIR 	= os.path.join('resources', 'output', PROJECT_NAME)
 		self.PROJECT_DIR 		= os.path.join(DG_ROOT, LOCAL_PROJECT_DIR)
 		if not os.path.exists(self.PROJECT_DIR):
 			print("Info: Starting project -> {}...".format(PROJECT_NAME))

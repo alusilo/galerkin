@@ -6,7 +6,7 @@ import matplotlib.cm as cm
 from matplotlib import animation
 import matplotlib.tri as tri
 
-from nodalDG import *
+from .nodalDG import *
 
 import os, json
 

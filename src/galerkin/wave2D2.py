@@ -1,4 +1,4 @@
-from nodalDG import *
+from .nodalDG import *
 import sys
 
 def Grad2D(info,u):

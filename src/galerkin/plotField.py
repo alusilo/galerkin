@@ -7,7 +7,7 @@ import matplotlib.tri as tri
 
 import os, json
 
-from Mesh2D import *
+from .Mesh2D import *
 
 fig, ax = plt.subplots(1, 1, sharex=False, sharey=False, figsize=(9,5))
 

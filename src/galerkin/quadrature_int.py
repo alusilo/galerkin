@@ -1,8 +1,8 @@
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-from nodalDG import *
-from cubatureData2D import cubatureData2D
+from .nodalDG import *
+from .cubatureData2D import cubatureData2D
 
 #eps = 1e-12
 
