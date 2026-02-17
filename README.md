@@ -23,18 +23,24 @@ galerkin/
 │       ├── wave2D.py      # Main wave propagation driver
 │       ├── nodalDG.py     # Nodal DG base class
 │       ├── Mesh2D.py      # 2D mesh handling
-│       ├── polynomials.py # Polynomial basis functions
 │       └── ...            # Additional utilities
+├── scripts/               # Complement scripts (plotting, demos)
+│   ├── visualize.py      # Seismograms and wave-field animation
+│   ├── generate_param_from_mesh.py
+│   ├── plot_src.py       # Initial source distribution
+│   ├── plot_src_support.py
+│   ├── plot_field.py     # Wave field animation
+│   ├── wavelet_generator.py
+│   ├── polynomials.py    # Polynomial basis demo
+│   └── quadrature_int.py
 ├── examples/
 │   └── 1d/                # 1D examples (educational)
-│       ├── Advec1D.py
-│       ├── AdvecDriver1D.py
-│       └── ...
 ├── resources/             # Mesh files, sources, and output
 │   ├── mesh/              # Mesh files (.ele, .neu, .msh)
 │   ├── source/            # Source function definitions
 │   └── output/            # Simulation outputs (gitignored)
 ├── pyproject.toml         # UV package configuration
+├── run.sh                 # Run 2D simulation (from project root)
 └── README.md
 ```
 
@@ -108,7 +114,13 @@ obj = WaveDrive2D(
 obj.run()
 ```
 
-Or use the example script:
+Or run the simulation from the project root using the provided script:
+```bash
+./run.sh
+```
+(This runs `uv run python src/galerkin/main.py`.)
+
+Alternatively:
 ```bash
 uv run python src/galerkin/main.py
 ```
@@ -130,8 +142,13 @@ Options:
 - `--no-movie`: only plot seismograms.
 - `--snapshot N`: show a single wave-field frame instead of animation.
 
-You can also use the package plotting utilities (run from project root so paths resolve):
-- `uv run python -c "from galerkin.plotField import *"` — wave field animation (reads `model.param` and mesh from the project output folder).
+Other complement scripts (run from project root):
+- `uv run python scripts/plot_field.py` — wave field animation (reads `model.param` and mesh from the project output folder).
+- `uv run python scripts/plot_src.py` — plot initial source distribution.
+- `uv run python scripts/plot_src_support.py` — plot spatial source support.
+- `uv run python scripts/polynomials.py` — polynomial basis demo.
+- `uv run python scripts/quadrature_int.py` — quadrature/interpolation demo.
+- `uv run python scripts/wavelet_generator.py` — generate wavelet and timing PDFs.
 
 ### Running 1D Examples
 
@@ -267,8 +284,8 @@ The only requirement is that the original copyright notice and license are inclu
 
 ## Contributing
 
-[Add contribution guidelines here]
+Anyone is free to fork this repository and create a new repository from it. You may use, modify, and distribute the code in accordance with the MIT License.
 
 ## Contact
 
-[Add contact information here]
+For questions or feedback, you can reach the author at **silva.l.a.l@gmail.com**.

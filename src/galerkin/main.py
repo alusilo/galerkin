@@ -43,7 +43,7 @@ obj = WaveDrive2D(
         (3000, 100),
         (3500, 100),
     ],  # receiver positions inside domain (x,y)
-    source_order=6, # source finite elements order
+    source_order=6,  # source finite elements order
     order=4,  # finite elements order (non-source elements)
     src_freq=7.5,  # source frequency
     src_delay=1 / 7.5,  # source delay

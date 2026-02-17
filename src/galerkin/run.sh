@@ -1,1 +1,0 @@
-MKL_DYNAMIC=FALSE python main.py

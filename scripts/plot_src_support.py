@@ -1,16 +1,23 @@
+#!/usr/bin/env python3
+"""Plot spatial source support (run from project root: uv run python scripts/plot_src_support.py)."""
 import json
 import os
+import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate as it
 from scipy import linalg as la
 
-from .nodalDG import Nodes2D, Vandermonde2D, xytors
+# Import from galerkin package (run from project root with uv run)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_src = os.path.join(_PROJECT_ROOT, "src")
+if _src not in sys.path:
+    sys.path.insert(0, _src)
+from galerkin.nodalDG import Nodes2D, Vandermonde2D, xytors
 
 
 def barycentric(vertices, p):
-    # get vertices of the elements
     a = vertices[0] - vertices[1]
     b = vertices[2] - vertices[1]
     s = p - vertices[1]
@@ -20,31 +27,16 @@ def barycentric(vertices, p):
     return l1 + 0, l2 + 0, l3 + 0
 
 
-PROJECT_NAME = "gauss75_tests_s60"
+PROJECT_NAME = "erase"
 PARAM_FILENAME = "model.param"
-DG_ROOT = os.path.dirname(os.getcwd())
-LOCAL_PROJECT_DIR = os.path.join("resources/output", PROJECT_NAME)
-PROJECT_DIR = os.path.join(DG_ROOT, LOCAL_PROJECT_DIR)
+LOCAL_PROJECT_DIR = os.path.join("resources", "output", PROJECT_NAME)
+PROJECT_DIR = os.path.join(_PROJECT_ROOT, LOCAL_PROJECT_DIR)
 PARAM_FILE_PATH = os.path.join(PROJECT_DIR, PARAM_FILENAME)
 
 param = json.load(open(PARAM_FILE_PATH))
 N = param["source"]["order"]
-data = np.load("../resources/output/" + PROJECT_NAME + "/initial_source_n{}.npy".format(N))
-# data = np.array([
-# 	1.73443823E-05, 6.16954785E-05, 8.39711174E-06, 4.99628622E-05, 2.19158919E-05, 4.23596102E-05,
-# 	1.35145492E-05, 3.62187461E-06, 4.81449661E-07, 1.41035634E-05, 3.82887083E-06, 2.06194431E-06,
-# 	6.28286725E-05, 3.34721267E-06, 1.24896842E-05, 2.61333207E-05, 4.09113127E-05, 1.30340313E-05,
-# 	8.87039914E-06, 3.29862758E-07, 1.83219654E-05, 2.36706546E-06, 2.31511403E-05, 5.53463769E-06,
-# 	2.88116553E-07, 4.90284862E-08, 1.60032050E-05, 1.75086072E-07, 4.83419399E-06, 1.76904939E-06,
-# 	3.36332027E-06, 6.31310249E-05, 9.07407320E-06, 2.62590802E-05, 9.87841941E-06, 3.65945489E-05,
-# 	1.15718713E-05, 1.69176708E-08, 1.30413838E-07, 9.65411914E-07, 3.34046877E-06, 9.28157959E-08,
-# 	1.20741088E-05, 1.36074007E-07, 6.17318074E-06, 3.48545041E-06, 2.00651357E-05, 1.62380672E-06,
-# 	1.25628594E-05, 8.60144792E-06, 6.31967778E-05, 1.97166210E-05, 4.11510082E-05, 4.33903915E-05,
-# 	3.32854347E-06, 8.98024700E-06, 1.02126158E-07, 9.77627678E-06, 1.00918407E-06, 1.52108976E-06,
-# 	1.35803784E-05, 6.30445740E-08, 1.18290006E-06, 1.48211109E-06, 6.13032489E-06, 4.82913663E-07,
-# 	1.88719059E-05, 9.64871924E-06, 6.71290109E-05, 3.13619312E-05, 5.43630995E-05, 3.89120250E-05,
-# 	1.53929632E-05, 1.34078277E-06, 1.05391437E-05, 6.94854498E-06, 2.41582911E-05, 5.20341428E-06,
-# 	1.40409502E-05, 5.00202475E-07, 6.51826966E-08, 3.97800795E-06, 1.53237613E-06, 3.08962541E-07])
+data = np.load(os.path.join(PROJECT_DIR, "initial_source_n{}.npy".format(N)))
+
 elements = param["source"]["elements"]
 Nfp = N + 1
 Np = int(Nfp * (Nfp + 1) / 2)
@@ -79,7 +71,6 @@ Zdata = np.array([])
 Zdata.shape = (0, Np)
 
 fig = plt.figure()
-# ax = fig.gca(projection='3d')
 for k in range(elements):
     local_data = data[:, k * Np : (k + 1) * Np]
     mapV = [0, Nfp - 1, Np - 1]
@@ -94,10 +85,8 @@ for k in range(elements):
     Xdata = np.append(Xdata, PX)
     Ydata = np.append(Ydata, PY)
     Zdata = np.append(Zdata, PZ)
-    # ax.plot_trisurf(PX,PY,PZ)
 
 global_data = np.array([Xdata, Ydata, Zdata])
-# Plot
 xmin, xmax = np.min(global_data[0]), np.max(global_data[0])
 ymin, ymax = np.min(global_data[1]), np.max(global_data[1])
 
@@ -109,7 +98,6 @@ sx, sy = param["source"]["position"]
 plt.xlabel(r"$x$ [$km$]")
 plt.ylabel(r"$z$ [$km$]")
 cmap = plt.cm.hot
-# ax.plot_trisurf(Xdata,Ydata,Zdata,antialiased=True,linewidth=0,cmap=cmap)
 plt.plot(
     sx / 1000,
     sy / 1000,
@@ -119,7 +107,6 @@ plt.plot(
     marker="*",
     markersize=15,
 )
-# plt.scatter(Xdata/1000,Ydata/1000,color='black', marker='.', s=80)
 plt.imshow(
     Z.T[::-1, :],
     extent=[xmin / 1000, xmax / 1000, ymin / 1000, ymax / 1000],
