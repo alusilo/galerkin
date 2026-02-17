@@ -31,6 +31,12 @@ env/
 .uv/
 uv.lock
 
+# Ruff
+.ruff_cache/
+
+# Pytest
+.pytest_cache/
+
 # IDE
 .vscode/
 .idea/

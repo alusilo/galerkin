@@ -3,34 +3,43 @@ name = "galerkin"
 version = "0.1.0"
 description = "Discontinuous Galerkin method implementation for wave propagation in 2D"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "silva.l.a.l@gmail.com"},
+]
 dependencies = [
-    "numpy>=1.20.0",
-    "scipy>=1.7.0",
-    "matplotlib>=3.4.0",
+    "numpy>=1.24.0",
+    "scipy>=1.11.0",
+    "matplotlib>=3.7.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
-    "black>=22.0.0",
+    "pytest>=7.4.0",
+    "black>=23.0.0",
     "ruff>=0.1.0",
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.21.0", "setuptools>=69.0.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/galerkin"]
 
 [tool.uv]
-dev-dependencies = []
+# Exclude broken 'sync' package (uses removed 'imp' module on Python 3.12+)
+exclude-dependencies = ["sync"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py38"
+target-version = "py310"
+
+[tool.ruff.lint.per-file-ignores]
+# Star imports from .nodalDG / .Mesh2D are used; names are defined there
+"src/galerkin/*.py" = ["F405"]
 
 [tool.black]
 line-length = 100
-target-version = ["py38"]
+target-version = ["py310"]

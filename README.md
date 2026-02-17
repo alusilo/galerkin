@@ -44,7 +44,7 @@ This project uses [uv](https://github.com/astral-sh/uv) for fast Python package 
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.10 or higher
 - [uv](https://github.com/astral-sh/uv) package manager
 
 Install uv:
@@ -110,8 +110,28 @@ obj.run()
 
 Or use the example script:
 ```bash
-python src/galerkin/main.py
+uv run python src/galerkin/main.py
 ```
+
+### Visualizing results
+
+After a 2D run, wave field and seismograms are under `resources/output/<project_name>/`. To plot them:
+
+```bash
+uv run python scripts/visualize.py
+uv run python scripts/visualize.py --project erase
+```
+
+This opens:
+- **Seismograms**: Vx and Vy at each receiver.
+- **Wave field**: animated snapshot of Vx (click to run).
+
+Options:
+- `--no-movie`: only plot seismograms.
+- `--snapshot N`: show a single wave-field frame instead of animation.
+
+You can also use the package plotting utilities (run from project root so paths resolve):
+- `uv run python -c "from galerkin.plotField import *"` — wave field animation (reads `model.param` and mesh from the project output folder).
 
 ### Running 1D Examples
 
@@ -124,9 +144,9 @@ python AdvecDriver1D.py
 
 ## Dependencies
 
-- **numpy** >= 1.20.0 - Numerical computations
-- **scipy** >= 1.7.0 - Scientific computing utilities
-- **matplotlib** >= 3.4.0 - Visualization
+- **numpy** >= 1.24.0 - Numerical computations
+- **scipy** >= 1.11.0 - Scientific computing utilities
+- **matplotlib** >= 3.7.0 - Visualization
 
 ### Optional Dependencies
 
@@ -142,14 +162,35 @@ python AdvecDriver1D.py
 
 ## Configuration
 
-### Mesh Files
+### Resources and mesh (you need a mesh first)
 
-The code supports triangular meshes in various formats:
-- `.ele` files (Triangle format)
-- `.neu` files (Gambit format)
-- `.msh` files (Gmsh format)
+The 2D solver expects **mesh and parameter files to already exist**. Paths in the code are relative to the **project root**, so run from the repo root (e.g. `uv run python src/galerkin/main.py`).
 
-Place mesh files in `resources/mesh/`.
+1. **Mesh files**  
+   Place meshes under `resources/mesh/`. Supported formats:
+   - **Triangle** (`.ele` + `.node`): typically generated first (see below).
+   - **GMSH** (`.msh`): e.g. from [Gmsh](https://gmsh.info/) or the included `resources/mesh/small.msh`.
+   - **Gambit** (`.neu`): e.g. `resources/mesh/neu/*.neu`.
+
+2. **Triangle format (`.ele` / `.node`)**  
+   The example in `main.py` uses Triangle output (e.g. `resources/mesh/tri/tlr.ele` and `tlr.node`). These are **not** included in the repo; you must generate them:
+   - Use the **Triangle** program to produce `.ele` and `.node` from a `.poly` description, or
+   - Use the mesh generator under `resources/mesh/tri/trimeshGen/` (SCons + C++/RSF), which writes `.ele`/`.node` (and related files) from the JSON layer models there.
+
+3. **Parameter file (`.param`)**  
+   The solver needs a **parameter file** (e.g. `tlr.param`) with one line per **element**:  
+   `rho vs vp` (density, S-wave speed, P-wave speed), space-separated. The number of lines must equal the number of triangular elements in the mesh.
+
+4. **If you see “file does not exist”**  
+   - Ensure the mesh (and for Triangle, both `.ele` and `.node`) and the `.param` file exist at the paths used in `main.py` (under `resources/mesh/`).
+   - Or point `mesh_file` and `param_file` in `main.py` to an existing mesh (e.g. a `.msh` and a matching `.param` with the correct number of lines).
+
+5. **Quick run with the included GMSH mesh**  
+   To run without generating a Triangle mesh, use the provided `small.msh` and generate a param file:
+   ```bash
+   uv run python scripts/generate_param_from_mesh.py resources/mesh/small.msh -o resources/mesh/small.param
+   ```
+   Then in `main.py` set `MESH_FILE` to `os.path.join(_RESOURCES, "small.msh")` and `PARAM_FILE` to `os.path.join(_RESOURCES, "small.param")`.
 
 ### Source Functions
 
@@ -163,6 +204,11 @@ Simulation outputs are saved to `resources/output/<project_name>/` and include:
 - Parameter files
 
 ## Development
+
+**Use `uv run`, not `uvx`**, for project tools. From the project root (after `uv sync`):
+
+- `uv run <script>` — runs using this project’s virtualenv and dependencies.
+- `uvx <tool>` — runs a tool in a separate, temporary environment (for one-off tools not in this project). If `uvx` fails, use `uv run` instead for tools listed below.
 
 ### Code Formatting
 
@@ -210,7 +256,14 @@ The method uses:
 
 ## License
 
-[Add your license information here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+The MIT License is permissive and allows:
+- Academic and commercial use
+- Modification and distribution
+- Private use
+
+The only requirement is that the original copyright notice and license are included in any copies or substantial portions of the software.
 
 ## Contributing
 
